@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build Server') {
+            when {
+                expression {
+                    // Vérifie si des fichiers dans le dossier "server" ont été modifiés
+                    sh(script: 'git diff --name-only HEAD~1 | grep "^server/"', returnStatus: true) == 0
+                }
+            }
+            steps {
+                echo 'Building server...'
+                sh 'docker build -t myapp-server ./server'
+            }
+        }
+        stage('Build Client') {
+            when {
+                expression {
+                    // Vérifie si des fichiers dans le dossier "client" ont été modifiés
+                    sh(script: 'git diff --name-only HEAD~1 | grep "^client/"', returnStatus: true) == 0
+                }
+            }
+            steps {
+                echo 'Building client...'
+                sh 'docker build -t myapp-client ./client'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up Docker artifacts...'
+            // Nettoyage Docker
+            sh '''
+            docker container prune -f
+            docker image prune -f
+            '''
+        }
+    }
+}
